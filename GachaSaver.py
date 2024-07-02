@@ -1,3 +1,4 @@
+from flask import Flask, request
 from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
 import logging
@@ -40,17 +41,30 @@ async def myids(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     else:
         await update.message.reply_text('You have no game IDs stored.')
 
-def main() -> None:
-    # Replace 'YOUR TOKEN HERE' with your actual bot token
-    application = ApplicationBuilder().token("7248760210:AAGuVZ3K2eXTs37WarN0KouawxhndNBX7TQ").build()
+app = Flask(__name__)
+
+@app.route('/<token>', methods=['POST'])
+async def webhook(token):
+    application = ApplicationBuilder().token(token).build()
 
     application.add_handler(CommandHandler("start", start))
     application.add_handler(CommandHandler("add", add))
     application.add_handler(CommandHandler("delete", delete))
     application.add_handler(CommandHandler("myids", myids))
 
-    # Run the bot until you press Ctrl-C
-    application.run_polling()
+    update = Update.de_json(request.get_json(), application.bot)
+    await application.process_update(update)
+
+    return 'ok'
 
 if __name__ == '__main__':
-    main()
+    import os
+    token = os.getenv('BOT_TOKEN')
+    port = int(os.environ.get('PORT', 8443))
+    url = f"https://your_hosted_url/{token}"
+
+    # Set webhook
+    application = ApplicationBuilder().token(token).build()
+    application.bot.set_webhook(url)
+
+    app.run(host='0.0.0.0', port=port)
