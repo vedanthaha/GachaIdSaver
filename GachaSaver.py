@@ -1,6 +1,6 @@
 from flask import Flask, request
 from telegram import Update
-from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
+from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes, Dispatcher
 import logging
 import os
 
@@ -44,24 +44,28 @@ async def myids(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
 app = Flask(__name__)
 
-@app.route('/<token>', methods=['POST'])
-async def webhook(token):
+@app.route('/webhook', methods=['POST'])
+def webhook():
+    token = os.getenv('BOT_TOKEN')
     application = ApplicationBuilder().token(token).build()
 
-    application.add_handler(CommandHandler("start", start))
-    application.add_handler(CommandHandler("add", add))
-    application.add_handler(CommandHandler("delete", delete))
-    application.add_handler(CommandHandler("myids", myids))
+    dp = Dispatcher(application.bot, update_queue=None, use_context=True)
 
-    update = Update.de_json(request.get_json(), application.bot)
-    await application.process_update(update)
+    dp.add_handler(CommandHandler("start", start))
+    dp.add_handler(CommandHandler("add", add))
+    dp.add_handler(CommandHandler("delete", delete))
+    dp.add_handler(CommandHandler("myids", myids))
+
+    update = Update.de_json(request.get_json(force=True), application.bot)
+    dp.process_update(update)
 
     return 'ok'
 
 if __name__ == '__main__':
     token = os.getenv('BOT_TOKEN')
     port = int(os.environ.get('PORT', 8443))
-    url = f"https://your_render_url/{token}"
+
+    url = f"https://https://gachaidsaver.onrender.com/webhook"  # Replace with your actual Render URL
 
     # Set webhook
     application = ApplicationBuilder().token(token).build()
