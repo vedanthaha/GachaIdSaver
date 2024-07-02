@@ -1,19 +1,21 @@
+import os
+import requests
+from telegram import Bot
 from flask import Flask, request
 from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
-import logging
-import os
 
 # Enable logging
-logging.basicConfig(
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    level=logging.INFO
-)
-logger = logging.getLogger(__name__)
+import logging
+logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
+
+# Initialize Flask app
+app = Flask(__name__)
 
 # Dictionary to store user IDs and their game IDs
 user_data = {}
 
+# Define command handlers
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     await update.message.reply_text('Welcome! Use /add <game_id> to add a game ID.')
 
@@ -42,8 +44,7 @@ async def myids(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     else:
         await update.message.reply_text('You have no game IDs stored.')
 
-app = Flask(__name__)
-
+# Webhook route
 @app.route('/webhook', methods=['POST'])
 async def webhook():
     token = os.getenv('BOT_TOKEN')
@@ -55,13 +56,24 @@ async def webhook():
     return 'ok'
 
 if __name__ == '__main__':
-    token = os.getenv('BOT_TOKEN')
+    # Set up Flask app
     port = int(os.environ.get('PORT', 8443))
-
-    url = f"https://gachaidsaver.onrender.com/webhook"  # Replace with your actual Render URL
-
-    # Set webhook
-    application = ApplicationBuilder().token(token).build()
-    application.bot.set_webhook(url)
-
+    
+    # Set webhook URL
+    bot_token = os.getenv('BOT_TOKEN')
+    webhook_url = f'https://gachaidsaver.onrender.com/webhook'  # Replace with your actual Render URL
+    
+    bot = Bot(token=bot_token)
+    bot.set_webhook(webhook_url)
+    
+    # Add command handlers
+    application = ApplicationBuilder().token(bot_token).build()
+    application.bot.set_webhook(webhook_url)
+    
+    application.add_handler(CommandHandler("start", start))
+    application.add_handler(CommandHandler("add", add))
+    application.add_handler(CommandHandler("delete", delete))
+    application.add_handler(CommandHandler("myids", myids))
+    
+    # Start Flask server
     app.run(host='0.0.0.0', port=port)
