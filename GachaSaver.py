@@ -1,6 +1,6 @@
 from flask import Flask, request
 from telegram import Update
-from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes, Dispatcher
+from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
 import logging
 import os
 
@@ -45,19 +45,12 @@ async def myids(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 app = Flask(__name__)
 
 @app.route('/webhook', methods=['POST'])
-def webhook():
+async def webhook():
     token = os.getenv('BOT_TOKEN')
     application = ApplicationBuilder().token(token).build()
 
-    dp = Dispatcher(application.bot, update_queue=None, use_context=True)
-
-    dp.add_handler(CommandHandler("start", start))
-    dp.add_handler(CommandHandler("add", add))
-    dp.add_handler(CommandHandler("delete", delete))
-    dp.add_handler(CommandHandler("myids", myids))
-
     update = Update.de_json(request.get_json(force=True), application.bot)
-    dp.process_update(update)
+    await application.process_update(update)
 
     return 'ok'
 
@@ -65,7 +58,7 @@ if __name__ == '__main__':
     token = os.getenv('BOT_TOKEN')
     port = int(os.environ.get('PORT', 8443))
 
-    url = f"https://https://gachaidsaver.onrender.com/webhook"  # Replace with your actual Render URL
+    url = f"https://gachaidsaver.onrender.com/webhook"  # Replace with your actual Render URL
 
     # Set webhook
     application = ApplicationBuilder().token(token).build()
