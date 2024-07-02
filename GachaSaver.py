@@ -2,6 +2,7 @@ from flask import Flask, request
 from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
 import logging
+import os
 
 # Enable logging
 logging.basicConfig(
@@ -58,10 +59,9 @@ async def webhook(token):
     return 'ok'
 
 if __name__ == '__main__':
-    import os
     token = os.getenv('BOT_TOKEN')
     port = int(os.environ.get('PORT', 8443))
-    url = f"https://your_hosted_url/{token}"
+    url = f"https://your_render_url/{token}"
 
     # Set webhook
     application = ApplicationBuilder().token(token).build()
